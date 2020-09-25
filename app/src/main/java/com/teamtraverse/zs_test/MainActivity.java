@@ -1,6 +1,8 @@
 package com.teamtraverse.zs_test;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -8,10 +10,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.teamtraverse.zs_test.adapter.RecyclerAdapterUserList;
 import com.teamtraverse.zs_test.apiutils.AllApiService;
 import com.teamtraverse.zs_test.apiutils.AllUrlClass;
+import com.teamtraverse.zs_test.models.DataModel;
 import com.teamtraverse.zs_test.models.Login;
 import com.teamtraverse.zs_test.models.Message;
+import com.teamtraverse.zs_test.models.Results;
 import com.teamtraverse.zs_test.models.UserDetails;
 
 import java.util.List;
@@ -35,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         allUrlClass = new AllUrlClass();
+
+        getData();
     }
 
     public void getData(){
@@ -46,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
         progressDialog.show();
         //Building the retrofit
         retrofit=new Retrofit.Builder()
-                .baseUrl(allUrlClass.BASE_URL)
+                .baseUrl(allUrlClass.LIST_URL)
                 .addConverterFactory(GsonConverterFactory.create()).build();
         //Creating the logging interceptor
         HttpLoggingInterceptor httpLoggingInterceptor=new HttpLoggingInterceptor();
@@ -56,43 +63,28 @@ public class MainActivity extends AppCompatActivity {
         builder.addInterceptor(httpLoggingInterceptor);
         //Building the client
         apiInterface= retrofit.create(AllApiService.class);
-        usernameStr=username.getText().toString();
-        passwordStr=password.getText().toString();
-        Login login=new Login(usernameStr,passwordStr);
         //Passing the body into login method
-        Call<Message> call=apiInterface.login(login);
-        call.enqueue(new Callback<Message>() {
+        Call<Results> call=apiInterface.getDataLists(allUrlClass.LIST_URL);
+        call.enqueue(new Callback<Results>() {
             @Override
-            public void onResponse(Call<Message> call, Response<Message> response) {
+            public void onResponse(Call<Results> call, Response<Results> response) {
                 if (response.isSuccessful()){
-                    Log.v("test::isSuccessful : ",""+response.body().getMessage());
-                    if (response.body().getAction().equals("Login")){
-                        Log.v("test::getAction : ",""+response.body().getAction());
-                        if (response.body().getMessage().equals("Successful")){
-                            Log.v("test::getMessage : ",""+response.body().getMessage());
-                            Toast.makeText(LoginActivity.this, ""+response.body().getMessage(), Toast.LENGTH_SHORT).show();
-                            List<UserDetails> userDetails = response.body().getDataArray();
-                            progressDialog.dismiss();
-                            startActivity(new Intent(LoginActivity.this,MainActivity.class));
-                        }
-                        else if (response.body().getMessage().equals("Failed")){
-                            Log.v("test::getMessage : ",""+response.body().getMessage());
-                            Toast.makeText(LoginActivity.this, "Wrong email or password", Toast.LENGTH_SHORT).show();
-                            progressDialog.dismiss();
-                        }
+                    if (response.body().getResources() != null){
+                        List<DataModel> resultsList = response.body().getResources();
+                        RecyclerView recyclerView = findViewById(R.id.mRecyclerView);
+                        recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+                        RecyclerAdapterUserList recyclerAdapterUserList = new RecyclerAdapterUserList(resultsList,MainActivity.this);
+                        recyclerView.setAdapter(recyclerAdapterUserList);
+                        recyclerAdapterUserList.notifyDataSetChanged();
                     }
-                    else if (response.body().getAction().equals("login")){
-                        Toast.makeText(LoginActivity.this, "user already logged in", Toast.LENGTH_SHORT).show();
-                        progressDialog.dismiss();
-                        startActivity(new Intent(LoginActivity.this,MainActivity.class));
-                    }
+
                 }else {
-                    Toast.makeText(LoginActivity.this, "Internal Server Error", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Internal Server Error", Toast.LENGTH_SHORT).show();
                     progressDialog.dismiss();
                 }
             }
             @Override
-            public void onFailure(Call<Message> call, Throwable t) {
+            public void onFailure(Call<Results> call, Throwable t) {
                 progressDialog.dismiss();
                 Log.v("ERROR : ",""+t.getMessage());
             }

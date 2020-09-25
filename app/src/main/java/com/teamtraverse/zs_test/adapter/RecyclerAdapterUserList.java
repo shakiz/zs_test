@@ -12,12 +12,13 @@ import com.bumptech.glide.Glide;
 import com.teamtraverse.zs_test.R;
 import com.teamtraverse.zs_test.models.DataModel;
 import java.util.ArrayList;
+import java.util.List;
 
 public class RecyclerAdapterUserList extends RecyclerView.Adapter<RecyclerAdapterUserList.ViewHolder> {
-    private ArrayList<DataModel> listOfUsers;
+    private List<DataModel> listOfUsers;
     private Context context;
 
-    public RecyclerAdapterUserList(ArrayList<DataModel> listOfUsers, Context context) {
+    public RecyclerAdapterUserList(List<DataModel> listOfUsers, Context context) {
         this.listOfUsers = listOfUsers;
         this.context = context;
     }
